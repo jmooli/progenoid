@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+#Ignore the build folder
+build/
+
+#Ignore the compile_commands.json 
+compile_commands.json
+
+#Ignore test folder
+tests/
+
+#ignore cache
+.cache/
