@@ -15,12 +15,12 @@ public:
 
   void SetPosition(float x, float y);
 
-  virtual void Update(float DeltaTime) override;
+  virtual void Update(float deltaTime) override;
   virtual void Draw(sf::RenderWindow &window) override;
 
   sf::Vector2f GetPosition() const;
   sf::Vector2f GetSize() const;
 
 private:
-  sf::Sprite PaddleSprite;
+  sf::Sprite paddleSprite;
 };
