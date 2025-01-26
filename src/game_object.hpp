@@ -5,8 +5,8 @@
 class GameObject {
 
 public:
-  virtual ~GameObject() = default;
+  virtual ~GameObject();
 
-  virtual void update(float dt);
-  virtual void draw(sf::RenderWindow &window);
+  virtual void update(float dt) = 0;
+  virtual void draw(sf::RenderWindow &window) = 0;
 };

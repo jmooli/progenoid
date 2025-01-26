@@ -1,10 +1,9 @@
 #pragma once
 #include "resource_manager.hpp"
+#include "scene.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <memory>
-
-class Scene;
 
 class Game {
 public:

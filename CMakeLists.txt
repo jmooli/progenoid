@@ -17,6 +17,10 @@ add_executable(progenoid
     src/main.cpp
     src/resource_manager.cpp
     src/paddle.cpp
+    src/block.cpp
+    src/game.cpp
+    src/scene.cpp
+    src/game_object.cpp
 )
 target_compile_features(progenoid PRIVATE cxx_std_17)
 target_link_libraries(progenoid PRIVATE SFML::Graphics)

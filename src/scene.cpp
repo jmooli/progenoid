@@ -1,4 +1,5 @@
 #include "scene.hpp"
+#include "LevelData.hpp"
 #include "game_object.hpp"
 #include "resource_manager.hpp"
 #include <SFML/Graphics/RenderWindow.hpp>
@@ -9,6 +10,10 @@ Scene::Scene(ResourceManager &resources) : resources(resources) {}
 void Scene::AddGameObject(std::unique_ptr<GameObject> obj) {
 
   gameObjects.push_back(std::move(obj));
+}
+
+void Scene::loadLevelFromResource(const std::string &levelKey) {
+  const LevelData &data = resources.getLevel(levelKey);
 }
 
 void Scene::update(float dt) {

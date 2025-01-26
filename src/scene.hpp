@@ -15,7 +15,7 @@ public:
   void update(float deltaTime);
   void draw(sf::RenderWindow &window);
 
-  void loadLevel(const std::string &filename);
+  void loadLevelFromResource(const std::string &levelKey);
 
 private:
   int levelFileFormat = 0;

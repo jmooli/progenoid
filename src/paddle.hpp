@@ -15,8 +15,8 @@ public:
 
   void SetPosition(float x, float y);
 
-  virtual void Update(float deltaTime) override;
-  virtual void Draw(sf::RenderWindow &window) override;
+  virtual void update(float deltaTime) override;
+  virtual void draw(sf::RenderWindow &window) override;
 
   sf::Vector2f GetPosition() const;
   sf::Vector2f GetSize() const;

@@ -15,7 +15,7 @@ void Paddle::SetPosition(float x, float y) {
   paddleSprite.setPosition(sf::Vector2(x, y));
 }
 
-void Paddle::Update(float deltaTime) {
+void Paddle::update(float deltaTime) {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) ||
       sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) {
     paddleSprite.move(sf::Vector2f(-100.f * deltaTime, 0.f));
@@ -25,7 +25,7 @@ void Paddle::Update(float deltaTime) {
   }
 }
 
-void Paddle::Draw(sf::RenderWindow &window) { window.draw(paddleSprite); }
+void Paddle::draw(sf::RenderWindow &window) { window.draw(paddleSprite); }
 
 sf::Vector2f Paddle::GetPosition() const { return paddleSprite.getPosition(); }
 

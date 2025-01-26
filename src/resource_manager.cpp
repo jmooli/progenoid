@@ -8,8 +8,8 @@
 namespace fs = std::filesystem;
 
 ResourceManager::ResourceManager() {
-  loadAllLevelsFromFolder(std::string("assets"));
-  loadAllTexturesFromFolder(std::string("levels"));
+  loadAllLevelsFromFolder(std::string("levels"));
+  loadAllTexturesFromFolder(std::string("assets"));
 };
 
 void ResourceManager::loadAllLevelsFromFolder(const std::string &folderPath) {
@@ -40,8 +40,15 @@ void ResourceManager::loadAllTexturesFromFolder(const std::string &folderPath) {
         continue;
       }
 
+      // Check extension
+      auto extension = entry.path().extension().string();
+      if (extension != ".png" && extension != ".jpg" && extension != ".jpeg" &&
+          extension != ".bmp" && extension != ".gif") {
+        // skip non image files => skip
+        continue;
+      }
+
       std::string filepath = entry.path().string();
-      std::string filename = entry.path().filename().string();
       std::string stem = entry.path().stem().string();
 
       if (!loadTexture(stem, filepath)) {
