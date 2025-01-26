@@ -14,6 +14,16 @@ void Scene::AddGameObject(std::unique_ptr<GameObject> obj) {
 
 void Scene::loadLevelFromResource(const std::string &levelKey) {
   const LevelData &data = resources.getLevel(levelKey);
+
+  int rowIndex = 0;
+
+  for (const auto &line : data.gridLines) {
+    for (int colIndex = 0; colIndex < (int)line.size(); colIndex++) {
+      char c = line[colIndex];
+    }
+
+    rowIndex++;
+  }
 }
 
 void Scene::update(float dt) {

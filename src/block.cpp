@@ -8,8 +8,11 @@ Block::Block(BlockType type, const sf::Vector2f &position,
     : type(type), sprite(texture) {
 
   // TODO:set other properties
+  //
+  sprite
+      .setSca
 
-  sprite.setPosition(position);
+          sprite.setPosition(position);
 }
 
 void Block::update(float dt) {
