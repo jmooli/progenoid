@@ -18,6 +18,7 @@ public:
   void loadLevel(const std::string &filename);
 
 private:
+  int levelFileFormat = 0;
   ResourceManager &resources;
   std::vector<std::unique_ptr<GameObject>> gameObjects;
 };
