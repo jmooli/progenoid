@@ -17,6 +17,9 @@ public:
 
   void loadLevelFromResource(const std::string &levelKey);
 
+  void checkCollisions();
+  std::unique_ptr<GameObject> createBlock(char type);
+
 private:
   int levelFileFormat = 0;
   ResourceManager &resources;
