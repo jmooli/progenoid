@@ -1,16 +1,14 @@
-// Copy Rights Proge 2025
-
 #include "game.hpp"
 #include "resource_manager.hpp"
 #include "scene.hpp"
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Clock.hpp>
 
-Game::Game() {
-  window = sf::RenderWindow(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
-                            "Progenoid");
-  resources = ResourceManager();
+Game::Game()
+    : window(sf::RenderWindow(sf::VideoMode({1920u, 1080u}), "Progenoid")),
+      rm() {
+  currentScene = std::make_unique<Scene>(rm);
+
   window.setFramerateLimit(60);
 }
 
@@ -25,23 +23,24 @@ void Game::run() {
 }
 
 void Game::processEvents() {
-
-  while (window.isOpen()) {
-    while (const std::optional event = window.pollEvent()) {
-      if (event->is<sf::Event::Closed>()) {
-        window.close();
-      }
+  while (const std::optional event = window.pollEvent()) {
+    if (event->is<sf::Event::Closed>()) {
+      window.close();
     }
   }
 }
 
 void Game::update(float dt) {
-  // Scene handles object udpates
-  currentScene->update(dt);
+  // Safely call update on currentScene
+  if (currentScene) {
+    currentScene->update(dt);
+  }
 }
 
 void Game::render() {
   window.clear();
-  currentScene->draw(window);
+  if (currentScene) {
+    currentScene->draw(window);
+  }
   window.display();
 }

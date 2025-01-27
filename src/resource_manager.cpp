@@ -87,10 +87,19 @@ bool ResourceManager::loadLevel(const std::string &key,
     }
   }
 
+  int maxCols = 0;
+  int rowCount = 0;
+
   while (std::getline(file, line)) {
     levelData.gridLines.push_back(line);
+    rowCount++;
+    maxCols = std::max(maxCols, static_cast<int>(line.size()));
   }
 
+  levelData.cols = maxCols;
+  levelData.rows = rowCount;
+
+  std::cerr << "LevelKey:" << key << "\n"; // debug
   loadedLevels.insert({key, std::move(levelData)});
   return true;
 }
@@ -104,6 +113,8 @@ bool ResourceManager::loadTexture(const std::string &key,
     std::cerr << "Failed to load texture" << filepath << "\n";
     return false;
   }
+
+  std::cerr << "Texture Key : " << key << "\n"; // debug
   loadedTextures.insert({key, std::move(Texture)});
   return true;
 }
