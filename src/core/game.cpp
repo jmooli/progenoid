@@ -9,7 +9,7 @@ Game::Game()
       rm() {
   currentScene = std::make_unique<Scene>(rm);
 
-  window.setFramerateLimit(60);
+  window.setFramerateLimit(144);
 }
 
 void Game::run() {

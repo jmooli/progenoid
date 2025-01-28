@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../entities/game_object.hpp"
 #include "LevelData.hpp"
-#include "game_object.hpp"
 #include "resource_manager.hpp"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -18,7 +18,7 @@ public:
   void draw(sf::RenderWindow &window);
 
   void loadLevelFromResource(const std::string &levelKey);
-
+  void createWalls(float screenWidth, float screenHeight, float wallThickness);
   void checkCollisions();
   std::unique_ptr<GameObject> createBlockInGridCoordinate(int t, int x, int y);
 

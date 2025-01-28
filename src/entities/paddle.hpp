@@ -22,10 +22,11 @@ public:
 
   sf::FloatRect getBounds() const override;
   void onCollision(GameObject &other) override;
-
+  sf::Vector2f getAttachmentPoint() const;
   sf::Vector2f GetPosition() const;
   sf::Vector2f GetSize() const;
 
 private:
+  float speed = 600.f;
   sf::Sprite paddleSprite;
 };

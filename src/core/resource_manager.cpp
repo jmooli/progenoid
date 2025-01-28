@@ -92,6 +92,7 @@ bool ResourceManager::loadLevel(const std::string &key,
 
   while (std::getline(file, line)) {
     levelData.gridLines.push_back(line);
+    std::cout << line << "\n";
     rowCount++;
     maxCols = std::max(maxCols, static_cast<int>(line.size()));
   }
@@ -99,7 +100,7 @@ bool ResourceManager::loadLevel(const std::string &key,
   levelData.cols = maxCols;
   levelData.rows = rowCount;
 
-  std::cerr << "LevelKey:" << key << "\n"; // debug
+  std::cout << "LevelKey:" << key << "\n"; // debug
   loadedLevels.insert({key, std::move(levelData)});
   return true;
 }

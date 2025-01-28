@@ -20,10 +20,10 @@ void Paddle::SetPosition(float x, float y) {
 void Paddle::update(float deltaTime) {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) ||
       sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) {
-    paddleSprite.move(sf::Vector2f(-100.f * deltaTime, 0.f));
+    paddleSprite.move(sf::Vector2f(-speed * deltaTime, 0.f));
   } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) ||
              sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) {
-    paddleSprite.move(sf::Vector2f(100.f * deltaTime, 0.f));
+    paddleSprite.move(sf::Vector2f(speed * deltaTime, 0.f));
   }
 }
 
@@ -37,8 +37,13 @@ sf::Vector2f Paddle::GetSize() const {
   return {bounds.size.x * scale.x, bounds.size.y * scale.y};
 }
 
+sf::Vector2f Paddle::getAttachmentPoint() const {
+  sf::Vector2f paddlePosition = paddleSprite.getPosition();
+  return {paddlePosition.x, paddlePosition.y - GetSize().y / 2};
+}
+
 sf::FloatRect Paddle::getBounds() const {
-  auto bounds = paddleSprite.getLocalBounds();
+  auto bounds = paddleSprite.getGlobalBounds();
   return bounds;
 }
 
