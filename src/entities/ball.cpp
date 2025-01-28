@@ -1,4 +1,5 @@
 #include "ball.hpp"
+#include "block.hpp"
 #include "paddle.hpp"
 #include <cmath>
 #include <iostream>
@@ -69,13 +70,13 @@ void Ball::onCollision(GameObject &other) {
   sf::FloatRect ballRect = shape.getGlobalBounds();
   sf::FloatRect otherRect = other.getBounds();
 
-  float ballLeft = ballRect.position.x;
-  float ballTop = ballRect.position.y;
+  float ballLeft = ballRect.getCenter().x - (ballRect.size.x / 2);
+  float ballTop = ballRect.getCenter().y - (ballRect.size.y / 2);
   float ballWidth = ballRect.size.x;
   float ballHeight = ballRect.size.y;
 
-  float otherLeft = otherRect.position.x;
-  float otherTop = otherRect.position.y;
+  float otherLeft = otherRect.getCenter().x - (otherRect.size.x / 2);
+  float otherTop = otherRect.getCenter().y - (otherRect.size.y / 2);
   float otherWidth = otherRect.size.x;
   float otherHeight = otherRect.size.y;
 
@@ -104,8 +105,8 @@ void Ball::onCollision(GameObject &other) {
                                 // hitting the paddle
 
     // Adjust X velocity based on hit position
-    float paddleCenter = otherRect.position.x + otherRect.size.x / 2.f;
-    float ballCenter = ballRect.position.x + ballRect.size.x / 2.f;
+    float paddleCenter = otherRect.getCenter().x;
+    float ballCenter = ballRect.getCenter().x;
     float hitPos = (ballCenter - paddleCenter) /
                    (otherRect.size.x / 2.f); // Normalize between -1 and 1
 
@@ -120,8 +121,36 @@ void Ball::onCollision(GameObject &other) {
     std::cout << "Ball position after collision with Paddle: ("
               << shape.getPosition().x << ", " << shape.getPosition().y
               << ")\n";
+  } else if (auto block = dynamic_cast<Block *>(&other)) {
+    // Handle collision with Block
+
+    // Reflect the Y velocity if hitting from top or bottom
+    if (std::abs(minOverlapY) < std::abs(minOverlapX)) {
+      speedY =
+          (overlapTop > overlapBottom) ? std::abs(speedY) : -std::abs(speedY);
+      // Reposition the ball
+      if (overlapTop > overlapBottom) {
+        shape.setPosition(
+            {shape.getPosition().x, otherBottom + shape.getRadius()});
+      } else {
+        shape.setPosition(
+            {shape.getPosition().x, otherTop - shape.getRadius()});
+      }
+    } else {
+      // Reflect the X velocity if hitting from left or right
+      speedX =
+          (overlapLeft > overlapRight) ? std::abs(speedX) : -std::abs(speedX);
+      // Reposition the ball
+      if (overlapLeft > overlapRight) {
+        shape.setPosition(
+            {otherRight + shape.getRadius(), shape.getPosition().y});
+      } else {
+        shape.setPosition(
+            {otherLeft - shape.getRadius(), shape.getPosition().y});
+      }
+    }
   } else {
-    // Handle collisions with other objects (blocks, etc.)
+    // Handle other collisions if any
     if (std::abs(minOverlapX) < std::abs(minOverlapY)) {
       // Horizontal collision → flip X velocity
       speedX = -speedX;

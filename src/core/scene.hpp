@@ -21,6 +21,7 @@ public:
   void createWalls(float screenWidth, float screenHeight, float wallThickness);
   void checkCollisions();
   std::unique_ptr<GameObject> createBlockInGridCoordinate(int t, int x, int y);
+  void removeDestoryed();
 
 private:
   std::unique_ptr<LevelData> data;

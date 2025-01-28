@@ -16,6 +16,10 @@ public:
 
   void updateColor();
 
+  bool isDestroyed() const { return destroyed; }
+
 private:
   sf::RectangleShape shape;
+
+  bool destroyed = false;
 };

@@ -10,12 +10,21 @@ Block::Block(int type, float x, float y, float width, float height) {
 
 void Block::update(float deltaTime) {}
 
-void Block::draw(sf::RenderWindow &window) { window.draw(shape); }
+void Block::draw(sf::RenderWindow &window) {
+  if (!destroyed) {
+    window.draw(shape);
+  }
+}
 
 sf::FloatRect Block::getBounds() const { return shape.getGlobalBounds(); }
 
 void Block::onCollision(GameObject &other) {
   health--;
+
+  if (health <= 0) {
+    destroyed = true;
+    // add points etc
+  }
   updateColor();
 }
 

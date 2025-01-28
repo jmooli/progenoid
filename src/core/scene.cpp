@@ -9,6 +9,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -120,32 +121,50 @@ void Scene::checkCollisions() {
 }
 
 void Scene::update(float dt) {
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
-    for (auto &obj : gameObjects) {
-      auto ball = dynamic_cast<Ball *>(obj.get());
-      if (ball) {
-        ball->launch();
+  const int subSteps = 4;
+  float subDt = dt / subSteps;
+
+  for (int step = 0; step < subSteps; ++step) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
+      for (auto &obj : gameObjects) {
+        auto ball = dynamic_cast<Ball *>(obj.get());
+        if (ball) {
+          ball->launch();
+        }
       }
     }
-  }
 
-  // Ensure the ball sticks to the paddle if attached
-  for (auto &obj : gameObjects) {
-    auto ball = dynamic_cast<Ball *>(obj.get());
-    auto paddle = dynamic_cast<Paddle *>(obj.get());
-    if (ball && paddle && ball->attachedToPaddle) {
-      ball->attachToPaddle(paddle->getAttachmentPoint());
+    // Ensure the ball sticks to the paddle if attached
+    for (auto &obj : gameObjects) {
+      auto ball = dynamic_cast<Ball *>(obj.get());
+      auto paddle = dynamic_cast<Paddle *>(obj.get());
+      if (ball && paddle && ball->attachedToPaddle) {
+        ball->attachToPaddle(paddle->getAttachmentPoint());
+      }
     }
-  }
 
-  // Update all game objects
-  for (auto &obj : gameObjects) {
-    obj->update(dt);
-  }
+    // Update all game objects
+    for (auto &obj : gameObjects) {
+      obj->update(subDt);
+    }
 
-  // Check for collisions
-  checkCollisions();
+    // Check for collisions
+    checkCollisions();
+  }
+  removeDestoryed();
 }
+
+void Scene::removeDestoryed() {
+
+  gameObjects.erase(
+      std::remove_if(gameObjects.begin(), gameObjects.end(),
+                     [](const std::unique_ptr<GameObject> &obj) -> bool {
+                       auto block = dynamic_cast<Block *>(obj.get());
+                       return block && block->isDestroyed();
+                     }),
+      gameObjects.end());
+}
+
 void Scene::draw(sf::RenderWindow &window) {
   for (auto &obj : gameObjects) {
     obj->draw(window);
