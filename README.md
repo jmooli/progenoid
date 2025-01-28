@@ -25,6 +25,7 @@
 ```
 # Classic Paddle/Ball Game Clone<br/>
 
+![](https://github.com/jmooli/progenoid/blob/master/progenoid.gif)
 
 A classic paddle and ball game inspired by Breakout, developed in C++, written with nvim. This project is a work in progress...
 <br/>
