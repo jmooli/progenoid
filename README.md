@@ -90,7 +90,7 @@ C++ Compiler, CMake, SFML Library: Imported from git with cmake <br/>
 <br/>
 Build Instructions:<br/>
 
-Follow these steps to build the project using CMake:
+Follow these steps to build the project using CMake:<br/>
 ```
 Clone the Repository
 cmake -B build
@@ -110,8 +110,8 @@ Explanation:<br/>
 
 ## tested and developed on wsl2
 
-This ensures that the game can locate and load the necessary resources at runtime.
-Directory Structure:
+This ensures that the game can locate and load the necessary resources at runtime.<br/>
+Directory Structure:<br/>
 
 Your build directory should look like this:
 
@@ -131,31 +131,32 @@ build/bin/
 
 # 🚀 Future Work<br/>
 
-This project is continually evolving. Here's what's on the roadmap:
+This project is continually evolving. Here's what's on the roadmap:<br/>
 
 ## Game Mechanics:<br/>
 
+## Winning Conditions: 
+Implement logic to determine when a player has successfully completed a level.<br/>
+Losing Conditions: Define scenarios where the player loses a life or the game, such as the ball falling below the paddle.<br/>
 
-## Winning Conditions: Implement logic to determine when a player has successfully completed a level.
-Losing Conditions: Define scenarios where the player loses a life or the game, such as the ball falling below the paddle.
 ## User Interface:<br/>
+## Score Tracking:
+Introduce a scoring system that rewards players for breaking blocks.<br/>
 
+## Lives System: 
+Allow players multiple attempts before the game is over.<br/>
 
-## Score Tracking: Introduce a scoring system that rewards players for breaking blocks.
-Lives System: Allow players multiple attempts before the game is over.
-Menus: Create start, pause, and game over menus for better navigation.
-Level Editor:<br/>
+## Menus: 
+Create start, pause, and game over menus for better navigation.<br/>
 
+## Level Editor:<br/>
+Develop a graphical level editor to simplify the creation and modification of game levels.<br/>
 
-## Develop a graphical level editor to simplify the creation and modification of game levels.
 ## Enhanced Graphics and Audio:
+Add particle effects, animations, and sound effects to enrich the gaming experience.<br/>
 
-Add particle effects, animations, and sound effects to enrich the gaming experience.
-##P ower-Ups:
+## Power-Ups:
+Introduce power-ups that drop from destroyed blocks, providing temporary abilities like paddle expansion or multi-ball.<br/>
 
-
-Introduce power-ups that drop from destroyed blocks, providing temporary abilities like paddle expansion or multi-ball.
 ## Responsive Design:<br/>
-
-
-Optimize the game for different screen resolutions and aspect ratios.
+Optimize the game for different screen resolutions and aspect ratios.<br/>
