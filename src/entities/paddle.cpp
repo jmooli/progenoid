@@ -39,7 +39,8 @@ sf::Vector2f Paddle::GetSize() const {
 
 sf::Vector2f Paddle::getAttachmentPoint() const {
   sf::Vector2f paddlePosition = paddleSprite.getPosition();
-  return {paddlePosition.x, paddlePosition.y - GetSize().y / 2};
+  return {paddlePosition.x + (GetSize().x / 2),
+          paddlePosition.y - GetSize().y / 2};
 }
 
 sf::FloatRect Paddle::getBounds() const {

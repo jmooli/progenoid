@@ -1,6 +1,7 @@
 #include "ball.hpp"
 #include "block.hpp"
 #include "paddle.hpp"
+#include <SFML/System/Vector2.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -42,18 +43,7 @@ void Ball::update(float dt) {
   shape.setPosition(pos);
 }
 
-void Ball::draw(sf::RenderWindow &window) {
-  window.draw(shape);
-
-  // Draw bounding box for debugging
-  sf::RectangleShape bbox;
-  bbox.setPosition(shape.getGlobalBounds().position);
-  bbox.setSize(shape.getGlobalBounds().size);
-  bbox.setFillColor(sf::Color::Transparent);
-  bbox.setOutlineColor(sf::Color::Red);
-  bbox.setOutlineThickness(1.f);
-  window.draw(bbox);
-}
+void Ball::draw(sf::RenderWindow &window) { window.draw(shape); }
 
 sf::FloatRect Ball::getBounds() const { return shape.getGlobalBounds(); }
 
@@ -64,7 +54,7 @@ void Ball::onCollision(GameObject &other) {
   hasCollidedThisFrame = true;
 
   // Log collision for debugging
-  std::cout << "Ball onCollision with " << typeid(other).name() << std::endl;
+  // std::cout << "Ball onCollision with " << typeid(other).name() << std::endl;
 
   // Get bounding boxes
   sf::FloatRect ballRect = shape.getGlobalBounds();
@@ -98,9 +88,7 @@ void Ball::onCollision(GameObject &other) {
   float minOverlapY = ballFromTop ? overlapTop : overlapBottom;
 
   if (auto paddle = dynamic_cast<Paddle *>(&other)) {
-    // Specific handling for paddle collision
 
-    // Reflect the Y velocity
     speedY = -std::abs(speedY); // Ensure the ball always moves upwards after
                                 // hitting the paddle
 
@@ -165,13 +153,27 @@ void Ball::onCollision(GameObject &other) {
   }
 
   // Log velocity after collision
-  std::cout << "Ball velocity after collision: (" << speedX << ", " << speedY
-            << ")" << std::endl;
+  // std::cout << "Ball velocity after collision: (" << speedX << ", " << speedY
+  //          << ")" << std::endl;
 }
 
 void Ball::attachToPaddle(const sf::Vector2f &paddlePosition) {
   attachedToPaddle = true;
   shape.setPosition({paddlePosition.x, paddlePosition.y - shape.getRadius()});
+}
+
+void Ball::resetVelocity() {
+  speedX = 0;
+  speedY = 0;
+};
+
+void Ball::reattachToPaddle(const sf::Vector2f &PaddlePosition) {}
+
+bool Ball::isOutOfBounds(float height) {
+  if (shape.getPosition().y > height) {
+    return true;
+  };
+  return false;
 }
 
 void Ball::launch() {

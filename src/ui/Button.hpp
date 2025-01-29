@@ -1,0 +1,24 @@
+#pragma once
+#include <SFML/Graphics.hpp>
+#include <functional>
+
+class Button {
+public:
+  Button(const sf::Vector2f &position, const sf::Vector2f &size,
+         const std::string &text, sf::Font &font,
+         std::function<void()> onClick);
+
+  void handleEvent(const sf::Event &event, const sf::RenderWindow &window);
+  void draw(sf::RenderWindow &window);
+
+  void startGame();
+  void quitGame();
+  void openLevelEditor();
+
+private:
+  sf::RectangleShape shape;
+  sf::Text buttonText;
+  std::function<void()> onClickCallback;
+
+  bool isMouseOver(const sf::RenderWindow &window) const;
+};

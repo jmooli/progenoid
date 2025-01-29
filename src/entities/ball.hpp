@@ -5,10 +5,6 @@
 
 class Ball : public GameObject {
 public:
-  Ball(const Ball &) = default;
-  Ball(Ball &&) = default;
-  Ball &operator=(const Ball &) = default;
-  Ball &operator=(Ball &&) = default;
   Ball(float x, float y, float radius, float speedX, float speedY);
 
   void update(float dt) override;
@@ -19,9 +15,13 @@ public:
   void onCollision(GameObject &other) override;
 
   void attachToPaddle(const sf::Vector2f &paddlePosition);
+  void reattachToPaddle(const sf::Vector2f &paddlePosition);
+  void resetVelocity();
+
   void launch();
 
   bool attachedToPaddle = true;
+  bool isOutOfBounds(float height);
 
 private:
   bool hasCollidedThisFrame = false;

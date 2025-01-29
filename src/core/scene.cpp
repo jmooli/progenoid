@@ -64,6 +64,35 @@ std::unique_ptr<GameObject> Scene::createBlockInGridCoordinate(int t, int x,
   return block;
 }
 
+bool Scene::allBlocksDestroyed() const {
+  for (const auto &obj : gameObjects) {
+    if (dynamic_cast<Block *>(obj.get()) &&
+        !static_cast<Block *>(obj.get())->isDestroyed()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void Scene::restartLevel(const std::string &levelKey) {
+  gameObjects.clear();
+  loadLevelFromResource(levelKey);
+
+  // Recreate paddle and ball
+  std::unique_ptr<Paddle> paddle = std::make_unique<Paddle>(
+      1920.f / 2, 1000, 500.f, 50.f, resources.getTexture("Paddle"));
+  Paddle *paddlePtr = paddle.get();
+  AddGameObject(std::move(paddle));
+
+  std::unique_ptr<Ball> ball = std::make_unique<Ball>(
+      paddlePtr->getAttachmentPoint().x,
+      paddlePtr->getAttachmentPoint().y - 25.f, 15.f, 300.f, -300.f);
+  ball->attachToPaddle(paddlePtr->getAttachmentPoint());
+  AddGameObject(std::move(ball));
+
+  std::cout << "Level restarted.\n";
+}
+
 void Scene::createWalls(float screenWidth, float screenHeight,
                         float wallThickness) {
   AddGameObject(std::make_unique<Wall>(0.f, 0.f, screenWidth, wallThickness));
@@ -99,20 +128,16 @@ void Scene::checkCollisions() {
       auto &obj1 = gameObjects[i];
       auto &obj2 = gameObjects[j];
 
-      // 1) Identify if both are walls
-      //    If you have a Wall class, use dynamic_cast:
       bool bothWalls = (dynamic_cast<Wall *>(obj1.get()) != nullptr) &&
                        (dynamic_cast<Wall *>(obj2.get()) != nullptr);
 
-      // 2) Skip if both are walls
       if (bothWalls)
         continue;
 
-      // 3) Otherwise, do the normal collision check
       if (obj1->collidesWith(*obj2)) {
-        // LOG
-        std::cout << "Collision: " << typeid(*obj1).name() << " vs "
-                  << typeid(*obj2).name() << "\n";
+
+        //  std::cout << "Collision: " << typeid(*obj1).name() << " vs "
+        //          << typeid(*obj2).name() << "\n";
         obj1->onCollision(*obj2);
         obj2->onCollision(*obj1);
       }
@@ -134,23 +159,57 @@ void Scene::update(float dt) {
       }
     }
 
-    // Ensure the ball sticks to the paddle if attached
+    Paddle *paddle = nullptr;
+    Ball *ball = nullptr;
+
     for (auto &obj : gameObjects) {
-      auto ball = dynamic_cast<Ball *>(obj.get());
-      auto paddle = dynamic_cast<Paddle *>(obj.get());
-      if (ball && paddle && ball->attachedToPaddle) {
-        ball->attachToPaddle(paddle->getAttachmentPoint());
+      if (!paddle) {
+        paddle = dynamic_cast<Paddle *>(obj.get());
+      }
+      if (!ball) {
+        ball = dynamic_cast<Ball *>(obj.get());
+      }
+      if (paddle && ball) {
+        break;
       }
     }
 
-    // Update all game objects
+    if (paddle && ball && ball->attachedToPaddle) {
+      ball->attachToPaddle(paddle->getAttachmentPoint());
+    }
     for (auto &obj : gameObjects) {
       obj->update(subDt);
     }
 
-    // Check for collisions
     checkCollisions();
   }
+  // After substeps, check if the ball is out of bounds
+  for (auto &obj : gameObjects) {
+    auto ball = dynamic_cast<Ball *>(obj.get());
+    if (ball && ball->isOutOfBounds(1080.f)) { // Assuming screen height is 1080
+      // Find the paddle to reattach
+      Paddle *paddle = nullptr;
+      for (auto &pObj : gameObjects) {
+        paddle = dynamic_cast<Paddle *>(pObj.get());
+        if (paddle)
+          break;
+      }
+
+      if (paddle) {
+        ball->attachToPaddle(paddle->getAttachmentPoint());
+        ball->resetVelocity();
+        std::cout << "Ball reattached after going out of bounds.\n";
+      }
+    }
+  }
+
+  // Check if all blocks are destroyed to restart or load a new level
+  if (allBlocksDestroyed()) {
+    std::cout << "All blocks destroyed! Restarting level.\n";
+    restartLevel(
+        "level1"); // Replace "level1" with the next level key if applicable
+  }
+
   removeDestoryed();
 }
 
