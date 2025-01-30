@@ -4,6 +4,9 @@
 #include "resource_manager.hpp"
 #include "scene.hpp"
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Image.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <memory>
 
 enum class GameState {
@@ -32,7 +35,7 @@ private:
 
   std::unique_ptr<Scene> currentScene;
   std::unique_ptr<MainMenu> mainMenu;
-
+  std::unique_ptr<sf::Sprite> bg;
   const unsigned int WINDOW_WIDTH = 1920;
   const unsigned int WINDOW_HEIGHT = 1080;
 

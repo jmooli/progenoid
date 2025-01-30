@@ -1,16 +1,15 @@
 #include "Button.hpp"
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <iostream>
 
 Button::Button(const sf::Vector2f &position, const sf::Vector2f &size,
-               const std::string &text, sf::Font &font,
-               std::function<void()> onClick)
-    : buttonText(font), onClickCallback(onClick) {
-  shape.setPosition(position);
-  shape.setSize(size);
-  shape.setFillColor(sf::Color::Blue);
-  shape.setOutlineColor(sf::Color::White);
-  shape.setOutlineThickness(2.f);
+               const std::string &text, sf::Font &font, sf::Texture &texture,
+               sf::Texture &mouseOverTexture, std::function<void()> onClick)
+    : texture(texture), mouseOverTexture(mouseOverTexture), sprite(texture),
+      buttonText(font), onClickCallback(onClick) {
+  sprite.setPosition(position);
+  sprite.setScale(size);
 
   buttonText.setFont(font);
   buttonText.setString(text);
@@ -28,11 +27,18 @@ bool Button::isMouseOver(const sf::RenderWindow &window) const {
   sf::Vector2i mousePos = sf::Mouse::getPosition(window);
   sf::Vector2f mousePosF(static_cast<float>(mousePos.x),
                          static_cast<float>(mousePos.y));
-  return shape.getGlobalBounds().contains(mousePosF);
+  return sprite.getGlobalBounds().contains(mousePosF);
 }
 
 void Button::handleEvent(const sf::Event &event,
                          const sf::RenderWindow &window) {
+  if (const auto *mouseButtonHover = event.getIf<sf::Event::MouseMoved>()) {
+    if (isMouseOver(window)) {
+      sprite.setTexture(mouseOverTexture);
+    } else {
+      sprite.setTexture(texture);
+    }
+  }
   if (const auto *mouseButtonPressed =
           event.getIf<sf::Event::MouseButtonPressed>()) {
     if (mouseButtonPressed->button == sf::Mouse::Button::Left) {
@@ -45,17 +51,11 @@ void Button::handleEvent(const sf::Event &event,
           onClickCallback();
         }
       }
-
-      if (isMouseOver(window)) {
-        shape.setFillColor(sf::Color::Green);
-      } else {
-        shape.setFillColor(sf::Color::Blue);
-      }
     }
   }
 }
 
 void Button::draw(sf::RenderWindow &window) {
-  window.draw(shape);
+  window.draw(sprite);
   window.draw(buttonText);
 }

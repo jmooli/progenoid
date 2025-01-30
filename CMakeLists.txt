@@ -23,6 +23,8 @@ add_executable(progenoid
     src/core/game.cpp
     src/core/scene.cpp
     src/entities/game_object.cpp
+    src/entities/star.cpp
+    src/entities/starfield.cpp
     src/ui/Button.cpp
     src/ui/MainMenu.cpp
 )

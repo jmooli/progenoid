@@ -108,21 +108,22 @@ bool ResourceManager::loadLevel(const std::string &key,
 bool ResourceManager::loadTexture(const std::string &key,
                                   const std::string &filepath) {
 
-  sf::Texture Texture;
+  auto texture = std::make_shared<sf::Texture>();
 
-  if (!Texture.loadFromFile(filepath)) {
+  if (!texture->loadFromFile(filepath)) {
     std::cerr << "Failed to load texture" << filepath << "\n";
     return false;
   }
 
   std::cerr << "Texture Key : " << key << "\n"; // debug
-  loadedTextures.insert({key, std::move(Texture)});
+  textures.insert({key, texture});
   return true;
 }
 
-const sf::Texture &ResourceManager::getTexture(const std::string &key) const {
-  auto it = loadedTextures.find(key);
-  if (it == loadedTextures.end()) {
+std::shared_ptr<sf::Texture>
+ResourceManager::getTexture(const std::string &key) {
+  auto it = textures.find(key);
+  if (it == textures.end()) {
     throw std::runtime_error("Texture not found: " + key);
   }
   return it->second;

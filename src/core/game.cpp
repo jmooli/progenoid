@@ -3,6 +3,7 @@
 #include "resource_manager.hpp"
 #include "scene.hpp"
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 #include <iostream>
@@ -12,13 +13,15 @@ Game::Game()
     : window(sf::RenderWindow(sf::VideoMode({1920u, 1080u}), "Progenoid")),
       rm() {
 
-  mainMenu = std::make_unique<MainMenu>(window, [this]() {
+  mainMenu = std::make_unique<MainMenu>(window, rm, [this]() {
     std::cout << "Start Game Button Clicked! Switching to Playing State.\n";
     state = GameState::Playing;
   });
   currentScene = std::make_unique<Scene>(rm);
 
   window.setFramerateLimit(144);
+
+  bg = std::make_unique<sf::Sprite>(*rm.getTexture("bg"));
 }
 
 void Game::run() {
@@ -53,6 +56,7 @@ void Game::update(float dt) {
 
 void Game::render() {
   window.clear();
+  window.draw(*bg);
   if (state == GameState::Playing && currentScene) {
     currentScene->draw(window);
   }
