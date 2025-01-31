@@ -13,13 +13,16 @@
 #include <memory>
 #include <string>
 
-Scene::Scene(ResourceManager &rm) : resources(rm), starfield(200) {
+Scene::Scene(ResourceManager &rm, sf::RenderWindow &window)
+    : resources(rm), starfield(200), window(window) {
+
   loadLevelFromResource("level1");
 
   std::unique_ptr<Paddle> paddle = std::make_unique<Paddle>(
       1920.f / 2, 1000, 500.f, 50.f, *rm.getTexture("paddle"));
-  std::unique_ptr<Ball> ball = std::make_unique<Ball>(
-      1920.f / 2, 1000 - 25.f, *rm.getTexture("ball"), 300.f, -300.f);
+  std::unique_ptr<Ball> ball =
+      std::make_unique<Ball>(10, *rm.getTexture("ball"),
+                             paddle->getAttachmentPoint(), window.getSize());
 
   ball->attachToPaddle(paddle->getAttachmentPoint());
 
@@ -41,8 +44,8 @@ std::unique_ptr<GameObject> Scene::createBlockInGridCoordinate(int t, int x,
   // I should figure out smarter system for these.
   const float B_WIDTH = 150.f;
   const float B_HEIGHT = 55.f;
-  const float X_SPACING = 10.f;
-  const float Y_SPACING = 10.f;
+  const float X_SPACING = 2.f;
+  const float Y_SPACING = 2.f;
   const float SCREEN_WIDTH = 1920.f;
   const float SCREEN_HEIGHT = 1080.f;
 
@@ -72,9 +75,8 @@ void Scene::restartLevel(const std::string &levelKey) {
   AddGameObject(std::move(paddle));
 
   std::unique_ptr<Ball> ball =
-      std::make_unique<Ball>(paddlePtr->getAttachmentPoint().x,
-                             paddlePtr->getAttachmentPoint().y - 25.f,
-                             *resources.getTexture("ball"), 300.f, -300.f);
+      std::make_unique<Ball>(10, *resources.getTexture("ball"),
+                             paddle->getAttachmentPoint(), window.getSize());
   ball->attachToPaddle(paddlePtr->getAttachmentPoint());
   AddGameObject(std::move(ball));
 
@@ -104,17 +106,28 @@ void Scene::loadLevelFromResource(const std::string &levelKey) {
 
 void Scene::update(float dt) {
   Paddle *paddle = nullptr;
-
   for (auto &obj : gameObjects) {
     paddle = dynamic_cast<Paddle *>(obj.get());
     if (paddle)
       break;
   }
 
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
+    for (auto &obj : gameObjects) {
+      auto ball = dynamic_cast<Ball *>(obj.get());
+      if (ball) {
+        ball->launch();
+      }
+    }
+  }
+
   if (!paddle) {
     std::cerr << "Error: Paddle not found in gameObjects!\n";
     return;
   }
+
+  starfield.update(
+      dt, ((paddle->GetPosition().x - window.getSize().x * 0.5f) * 0.01f));
 
   for (auto &obj : gameObjects) {
     obj->update(dt, *paddle, gameObjects);

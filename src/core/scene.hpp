@@ -11,7 +11,7 @@
 
 class Scene {
 public:
-  explicit Scene(ResourceManager &rm);
+  explicit Scene(ResourceManager &rm, sf::RenderWindow &window);
 
   void AddGameObject(std::unique_ptr<GameObject> obj);
 
@@ -21,11 +21,14 @@ public:
 
 private:
   void loadLevelFromResource(const std::string &levelKey);
+
   std::unique_ptr<GameObject> createBlockInGridCoordinate(int t, int x, int y);
   std::unique_ptr<LevelData> data;
-  ResourceManager &resources;
   std::vector<std::unique_ptr<GameObject>> gameObjects;
+
   Starfield starfield;
+  ResourceManager &resources;
+  sf::RenderWindow &window;
 
   int levelFileFormat = 0;
 };

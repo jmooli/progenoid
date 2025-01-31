@@ -9,8 +9,8 @@
 
 class Ball : public GameObject {
 public:
-  Ball(float x, float y, const sf::Texture &texture, float speedX,
-       float speedY);
+  Ball(int radius, const sf::Texture &texture, sf::Vector2f position,
+       sf::Vector2u windowSize);
 
   void update(float dt, Paddle &paddle,
               std::vector<std::unique_ptr<GameObject>> &gameObjects) override;
@@ -22,16 +22,20 @@ public:
 
   void attachToPaddle(const sf::Vector2f &paddlePosition);
   void resetVelocity();
-  void RotateToCenter();
   void launch();
 
+  bool checkCollision(sf::FloatRect obj1, float deltaTime);
   bool attachedToPaddle = true;
   bool isOutOfBounds(float height);
 
 private:
   bool hasCollidedThisFrame = false;
   std::unique_ptr<sf::Sprite> sprite_ptr;
-  float speedX;
-  float speedY;
-  float ballSpeed = 1.f;
+  sf::Vector2f ballVelocity;
+  sf::Vector2u windowSize;
+  float ballSpeed = 2.f;
+  sf::FloatRect nextPos;
+  void applyAngleDeflection(Paddle &paddle);
+  sf::Vector2f startPos;
+  sf::Vector2f startVelocity;
 };

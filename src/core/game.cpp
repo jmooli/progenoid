@@ -17,7 +17,7 @@ Game::Game()
     std::cout << "Start Game Button Clicked! Switching to Playing State.\n";
     state = GameState::Playing;
   });
-  currentScene = std::make_unique<Scene>(rm);
+  currentScene = std::make_unique<Scene>(rm, window);
 
   window.setFramerateLimit(144);
 
