@@ -22,8 +22,10 @@ MainMenu::MainMenu(sf::RenderWindow &win, ResourceManager &resourceManager,
   levelEditorButton = std::make_unique<Button>(
       sf::Vector2f(win.getSize().x / 2.f - 250.f, 350.f),
       sf::Vector2f(1.f, 1.f), "Level Editor", font, *buttonTexture,
-      *buttonHoverTexture,
-      [&]() { std::cout << "Level Editor Button Clicked!\n"; });
+      *buttonHoverTexture, [&]() {
+        std::cout << "Level Editor Button Clicked!\n";
+        // Implement level editor logic here
+      });
 
   quitButton = std::make_unique<Button>(
       sf::Vector2f(win.getSize().x / 2.f - 250.f, 500.f),
@@ -43,9 +45,7 @@ void MainMenu::handleEvent(const sf::Event &event) {
     quitButton->handleEvent(event, window);
 }
 
-void MainMenu::update(float dt) {
-  // Nothing to update atm.
-}
+void MainMenu::update(float dt) {}
 
 void MainMenu::draw() {
   if (startGameButton)

@@ -8,7 +8,8 @@ Block::Block(int type, float x, float y, float width, float height) {
   updateColor();
 }
 
-void Block::update(float deltaTime) {}
+void Block::update(float dt, Paddle &paddle,
+                   std::vector<std::unique_ptr<GameObject>> &gameObjects) {}
 
 void Block::draw(sf::RenderWindow &window) {
   if (!destroyed) {

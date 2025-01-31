@@ -4,12 +4,16 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <optional>
 
+class Paddle;
+
 class GameObject {
 
 public:
   virtual ~GameObject();
 
-  virtual void update(float dt) = 0;
+  virtual void
+  update(float dt, Paddle &paddle,
+         std::vector<std::unique_ptr<GameObject>> &gameObjects) = 0;
   virtual void draw(sf::RenderWindow &window) = 0;
 
   virtual sf::FloatRect getBounds() const = 0;

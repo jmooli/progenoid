@@ -3,13 +3,11 @@
 #include "../entities/block.hpp"
 #include "../entities/game_object.hpp"
 #include "../entities/paddle.hpp"
-#include "../entities/wall.hpp"
 #include "LevelData.hpp"
 #include "resource_manager.hpp"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
-#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -20,8 +18,8 @@ Scene::Scene(ResourceManager &rm) : resources(rm), starfield(200) {
 
   std::unique_ptr<Paddle> paddle = std::make_unique<Paddle>(
       1920.f / 2, 1000, 500.f, 50.f, *rm.getTexture("paddle"));
-  std::unique_ptr<Ball> ball =
-      std::make_unique<Ball>(1920.f / 2, 1000 - 25.f, 15.f, 300.f, -300.f);
+  std::unique_ptr<Ball> ball = std::make_unique<Ball>(
+      1920.f / 2, 1000 - 25.f, *rm.getTexture("ball"), 300.f, -300.f);
 
   ball->attachToPaddle(paddle->getAttachmentPoint());
 
@@ -41,10 +39,10 @@ std::unique_ptr<GameObject> Scene::createBlockInGridCoordinate(int t, int x,
   }
 
   // I should figure out smarter system for these.
-  const float B_WIDTH = 200.f;
-  const float B_HEIGHT = 75.f;
-  const float X_SPACING = 20.f;
-  const float Y_SPACING = 20.f;
+  const float B_WIDTH = 150.f;
+  const float B_HEIGHT = 55.f;
+  const float X_SPACING = 10.f;
+  const float Y_SPACING = 10.f;
   const float SCREEN_WIDTH = 1920.f;
   const float SCREEN_HEIGHT = 1080.f;
 
@@ -63,14 +61,6 @@ std::unique_ptr<GameObject> Scene::createBlockInGridCoordinate(int t, int x,
   return block;
 }
 
-bool Scene::allBlocksDestroyed(std::unique_ptr<GameObject> &obj) const {
-  if (dynamic_cast<Block *>(obj.get()) &&
-      !static_cast<Block *>(obj.get())->isDestroyed()) {
-    return false;
-  }
-  return true;
-}
-
 void Scene::restartLevel(const std::string &levelKey) {
   gameObjects.clear();
   loadLevelFromResource(levelKey);
@@ -81,21 +71,14 @@ void Scene::restartLevel(const std::string &levelKey) {
   Paddle *paddlePtr = paddle.get();
   AddGameObject(std::move(paddle));
 
-  std::unique_ptr<Ball> ball = std::make_unique<Ball>(
-      paddlePtr->getAttachmentPoint().x,
-      paddlePtr->getAttachmentPoint().y - 25.f, 15.f, 300.f, -300.f);
+  std::unique_ptr<Ball> ball =
+      std::make_unique<Ball>(paddlePtr->getAttachmentPoint().x,
+                             paddlePtr->getAttachmentPoint().y - 25.f,
+                             *resources.getTexture("ball"), 300.f, -300.f);
   ball->attachToPaddle(paddlePtr->getAttachmentPoint());
   AddGameObject(std::move(ball));
 
   std::cout << "Level restarted.\n";
-}
-
-void Scene::createWalls(float screenWidth, float screenHeight,
-                        float wallThickness) {
-  AddGameObject(std::make_unique<Wall>(0.f, 0.f, screenWidth, wallThickness));
-  AddGameObject(std::make_unique<Wall>(0.f, 0.f, wallThickness, screenHeight));
-  AddGameObject(std::make_unique<Wall>(screenWidth - wallThickness, 0.f,
-                                       wallThickness, screenHeight));
 }
 
 void Scene::loadLevelFromResource(const std::string &levelKey) {
@@ -119,86 +102,26 @@ void Scene::loadLevelFromResource(const std::string &levelKey) {
   }
 }
 
-void Scene::checkCollisions() {
-  for (size_t i = 0; i < gameObjects.size(); ++i) {
-    for (size_t j = i + 1; j < gameObjects.size(); ++j) {
-      auto &obj1 = gameObjects[i];
-      auto &obj2 = gameObjects[j];
-
-      if (obj1->collidesWith(*obj2)) {
-        obj1->onCollision(*obj2);
-        obj2->onCollision(*obj1);
-      }
-    }
-  }
-}
-
 void Scene::update(float dt) {
-  bool blocksFound = false;
-  const int subSteps = 2;
-  float subDt = dt / subSteps;
   Paddle *paddle = nullptr;
-  Ball *ball = nullptr;
 
   for (auto &obj : gameObjects) {
-    if (!paddle)
-      paddle = dynamic_cast<Paddle *>(obj.get());
-    if (!ball)
-      ball = dynamic_cast<Ball *>(obj.get());
-    if (dynamic_cast<Block *>(obj.get()))
-      blocksFound = true;
-
-    if (paddle && ball && blocksFound) {
+    paddle = dynamic_cast<Paddle *>(obj.get());
+    if (paddle)
       break;
-    }
   }
 
-  if (!blocksFound) {
-    restartLevel("level1");
+  if (!paddle) {
+    std::cerr << "Error: Paddle not found in gameObjects!\n";
     return;
   }
 
-  if (ball && sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
-    ball->launch();
+  for (auto &obj : gameObjects) {
+    obj->update(dt, *paddle, gameObjects);
   }
-
-  if (paddle) {
-    starfield.update(dt, ((paddle->GetPosition().x - (1920.f / 2)) / 1000));
-  }
-
-  for (int step = 0; step < subSteps; ++step) {
-    if (paddle && ball && ball->attachedToPaddle) {
-      ball->attachToPaddle(paddle->getAttachmentPoint());
-    }
-
-    if (ball && ball->isOutOfBounds(1080.f) && paddle) {
-      ball->attachToPaddle(paddle->getAttachmentPoint());
-      ball->resetVelocity();
-    }
-
-    for (auto &obj : gameObjects) {
-      obj->update(subDt);
-    }
-
-    checkCollisions();
-  }
-
-  removeDestoryed();
-}
-
-void Scene::removeDestoryed() {
-
-  gameObjects.erase(
-      std::remove_if(gameObjects.begin(), gameObjects.end(),
-                     [](const std::unique_ptr<GameObject> &obj) -> bool {
-                       auto block = dynamic_cast<Block *>(obj.get());
-                       return block && block->isDestroyed();
-                     }),
-      gameObjects.end());
 }
 
 void Scene::draw(sf::RenderWindow &window) {
-  // TODO: need to clear this on destruction
   starfield.draw(window);
 
   for (auto &obj : gameObjects) {

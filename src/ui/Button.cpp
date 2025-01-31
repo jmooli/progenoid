@@ -19,8 +19,8 @@ Button::Button(const sf::Vector2f &position, const sf::Vector2f &size,
   // Center the text within the button
   sf::FloatRect textRect = buttonText.getLocalBounds();
   buttonText.setOrigin(textRect.getCenter());
-  buttonText.setPosition(
-      {position.x + size.x / 2.f, position.y + size.y / 2.f});
+  buttonText.setPosition({position.x + sprite.getLocalBounds().size.x / 2.f,
+                          position.y + sprite.getLocalBounds().size.y / 2.f});
 }
 
 bool Button::isMouseOver(const sf::RenderWindow &window) const {

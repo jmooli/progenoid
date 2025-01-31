@@ -15,16 +15,12 @@ public:
 
   void AddGameObject(std::unique_ptr<GameObject> obj);
 
-  void update(float deltaTime);
+  void update(float dt);
   void draw(sf::RenderWindow &window);
-  bool allBlocksDestroyed(std::unique_ptr<GameObject> &obj) const;
   void restartLevel(const std::string &levelKey);
 
 private:
   void loadLevelFromResource(const std::string &levelKey);
-  void createWalls(float screenWidth, float screenHeight, float wallThickness);
-  void checkCollisions();
-  void removeDestoryed();
   std::unique_ptr<GameObject> createBlockInGridCoordinate(int t, int x, int y);
   std::unique_ptr<LevelData> data;
   ResourceManager &resources;

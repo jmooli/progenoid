@@ -8,6 +8,8 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <memory>
+#include <vector>
 
 class Paddle : public GameObject {
 
@@ -17,7 +19,9 @@ public:
 
   void SetPosition(float x, float y);
 
-  virtual void update(float dt) override;
+  virtual void
+  update(float dt, Paddle &paddle,
+         std::vector<std::unique_ptr<GameObject>> &gameObjects) override;
   virtual void draw(sf::RenderWindow &window) override;
 
   sf::FloatRect getBounds() const override;

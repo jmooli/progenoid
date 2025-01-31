@@ -39,8 +39,9 @@ void Game::processEvents() {
     if (event->is<sf::Event::Closed>()) {
       window.close();
     }
-
-    mainMenu->handleEvent(*event);
+    if (state == GameState::MainMenu) {
+      mainMenu->handleEvent(*event);
+    }
   }
 }
 
