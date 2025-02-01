@@ -1,74 +1,219 @@
 #include "ball.hpp"
 #include "block.hpp"
-#include "paddle.hpp"
-#include <SFML/Graphics/Rect.hpp>
-#include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Angle.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <cmath>
-#include <memory>
 #include <optional>
 
 Ball::Ball(int radius, const sf::Texture &texture, sf::Vector2f position,
-           sf::Vector2u windowSize) {
+           sf::Vector2u windowSize)
+    : windowSize(windowSize), startPos(position) {
   sprite_ptr = std::make_unique<sf::Sprite>(texture);
   sprite_ptr->setPosition(position);
   sprite_ptr->setOrigin({texture.getSize().x / 2.f, texture.getSize().y / 2.f});
-  this->ballSpeed = 400.f;
-  this->windowSize = windowSize;
-  this->startPos = position;
-  this->ballVelocity = {0.f, 0.f};
-  this->startVelocity = ballVelocity;
+
+  // Initially, the ball is stationary until launched.
+  ballVelocity = {0.f, 0.f};
+  startVelocity = ballVelocity;
 }
 
 void Ball::update(float dt, Paddle &paddle,
                   std::vector<std::unique_ptr<GameObject>> &gameObjects) {
-  // Normalize velocity and apply speed
+  // Normalize velocity and apply constant speed
   float length = std::sqrt(ballVelocity.x * ballVelocity.x +
                            ballVelocity.y * ballVelocity.y);
-  if (length != 0) {
+  if (length != 0.f) {
     ballVelocity = (ballVelocity / length) * ballSpeed;
   }
 
-  // **Divide movement into smaller steps to prevent tunneling**
-  const int steps = 10; // Number of sub-steps per frame
+  // Increase collision precision by substepping
+  const int steps = 20;
   float subDt = dt / steps;
+  for (int i = 0; i < steps; ++i) {
+    sf::FloatRect currentBounds = sprite_ptr->getGlobalBounds();
+    sf::Vector2f currentCenter = currentBounds.getCenter();
+    sf::Vector2f nextCenter = currentCenter + ballVelocity * subDt;
 
-  for (int i = 0; i < steps; i++) {
-    // **Predict next position**
-    sf::FloatRect ballBounds = sprite_ptr->getGlobalBounds();
-    sf::Vector2f nextCenter = ballBounds.getCenter() + (ballVelocity * subDt);
+    // Handle collisions with the window boundaries
+    handleWallCollision(nextCenter, currentBounds);
 
-    // **Convert center-based position to bounding box**
-    sf::FloatRect nextPos({nextCenter.x - (ballBounds.size.x / 2),
-                           nextCenter.y - (ballBounds.size.y / 2)},
-                          ballBounds.size);
+    // Predict the next bounds based on nextCenter
+    sf::FloatRect nextBounds({nextCenter.x - currentBounds.size.x / 2.f,
+                              nextCenter.y - currentBounds.size.y / 2.f},
+                             {currentBounds.size.x, currentBounds.size.y});
 
-    // **Boundary collisions**
-    if (nextPos.getCenter().x - (nextPos.size.x / 2) < 0) { // Left wall
-      ballVelocity.x *= -1;
-    } else if (nextPos.getCenter().x + (nextPos.size.x / 2) >
-               windowSize.x) { // Right wall
-      ballVelocity.x *= -1;
-    } else if (nextPos.getCenter().y - (nextPos.size.y / 2) < 0) { // Top wall
-      ballVelocity.y *= -1;
+    bool collisionOccurred = false;
+    // Check for paddle collision first
+    if (handlePaddleCollision(paddle, subDt, nextCenter, currentBounds)) {
+      collisionOccurred = true;
+    }
+    // Then check for block collisions (only one collision per substep)
+    else if (handleBlockCollisions(gameObjects, subDt, nextCenter,
+                                   currentBounds)) {
+      collisionOccurred = true;
     }
 
-    // **Paddle Collision**
-    if (checkCollision(paddle.getBounds(), subDt)) {
-      ballVelocity.y = -std::abs(ballVelocity.y);
-      applyAngleDeflection(paddle);
-    }
-
-    // **Block Collisions**
-    for (auto &obj : gameObjects) {
-      if (obj.get() != this && checkCollision(obj->getBounds(), subDt)) {
-        onCollision(*obj);
-      }
-    }
-
-    // **Move the ball AFTER checking for collisions**
+    // Update the sprite position (collision handlers may have adjusted
+    // ballVelocity)
     sprite_ptr->setPosition(nextCenter);
+  }
+}
+
+void Ball::handleWallCollision(sf::Vector2f &nextCenter,
+                               const sf::FloatRect &bounds) {
+  float halfWidth = bounds.size.x / 2.f;
+  float halfHeight = bounds.size.y / 2.f;
+
+  // Left wall
+  if (nextCenter.x - halfWidth < 0.f) {
+    nextCenter.x = halfWidth;
+    ballVelocity.x = std::abs(ballVelocity.x);
+  }
+  // Right wall
+  else if (nextCenter.x + halfWidth > windowSize.x) {
+    nextCenter.x = windowSize.x - halfWidth;
+    ballVelocity.x = -std::abs(ballVelocity.x);
+  }
+
+  // Top wall
+  if (nextCenter.y - halfHeight < 0.f) {
+    nextCenter.y = halfHeight;
+    ballVelocity.y = std::abs(ballVelocity.y);
+  }
+}
+
+bool Ball::handlePaddleCollision(Paddle &paddle, float subDt,
+                                 sf::Vector2f &nextCenter,
+                                 const sf::FloatRect &currentBounds) {
+  if (checkCollision(paddle.getBounds(), subDt)) {
+    // Invert the vertical component of the velocity (ensuring upward movement)
+    ballVelocity.y = -std::abs(ballVelocity.y);
+    // Apply angle deflection based on where the ball hit the paddle
+    applyAngleDeflection(paddle);
+
+    // Adjust nextCenter to avoid sinking into the paddle (optional additional
+    // adjustment)
+    nextCenter.y = paddle.getBounds().getCenter().y -
+                   paddle.getBounds().size.y / 2.f -
+                   currentBounds.size.y / 2.f - 1.f;
+    return true;
+  }
+  return false;
+}
+
+bool Ball::handleBlockCollisions(
+    std::vector<std::unique_ptr<GameObject>> &gameObjects, float subDt,
+    sf::Vector2f &nextCenter, const sf::FloatRect &currentBounds) {
+  sf::FloatRect currentBoundsCopy = currentBounds;
+  // Predict the next bounds
+  sf::FloatRect nextBounds({nextCenter.x - currentBounds.size.x / 2.f,
+                            nextCenter.y - currentBounds.size.y / 2.f},
+                           {currentBounds.size.x, currentBounds.size.y});
+
+  for (auto &obj : gameObjects) {
+    // Skip self and non-block objects
+    if (obj.get() == this)
+      continue;
+
+    auto block = dynamic_cast<Block *>(obj.get());
+    if (block && checkCollision(block->getBounds(), subDt)) {
+      resolveBlockCollision(*block, currentBoundsCopy, nextBounds);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Ball::checkCollision(const sf::FloatRect &otherBounds, float deltaTime) {
+  // Predict next bounds based on current velocity and deltaTime
+  sf::FloatRect currentBounds = sprite_ptr->getGlobalBounds();
+  sf::Vector2f currentCenter = currentBounds.getCenter();
+  sf::Vector2f predictedCenter = currentCenter + ballVelocity * deltaTime;
+
+  sf::FloatRect predictedBounds(
+      {predictedCenter.x - currentBounds.size.x / 2.f,
+       predictedCenter.y - currentBounds.size.y / 2.f},
+      {currentBounds.size.x, currentBounds.size.y});
+
+  // Use findIntersection() which returns a std::optional<sf::FloatRect>
+  return predictedBounds.findIntersection(otherBounds) != std::nullopt;
+}
+
+void Ball::applyAngleDeflection(Paddle &paddle) {
+  // Calculate the offset between the ball and paddle centers
+  float paddleCenterX = paddle.getBounds().getCenter().x;
+  float ballCenterX = sprite_ptr->getGlobalBounds().getCenter().x;
+  float hitOffset =
+      (ballCenterX - paddleCenterX) / (paddle.getBounds().size.x / 2.f);
+
+  // Define the minimum angle (20°) in radians
+  const float MIN_ANGLE = 20.f * M_PI / 180.f;
+  // Maximum horizontal speed component derived from the minimum angle
+  float maxXComponent = std::abs(ballSpeed / std::tan(MIN_ANGLE));
+
+  float adjustmentFactor = 0.8f;
+  // Calculate the new horizontal velocity based on hit offset
+  float newVelocityX = hitOffset * maxXComponent * adjustmentFactor;
+  // Calculate the corresponding vertical component, ensuring upward motion
+  float newVelocityY = -std::sqrt(
+      std::max(0.f, ballSpeed * ballSpeed - newVelocityX * newVelocityX));
+
+  // Enforce a minimum vertical speed to avoid too shallow a trajectory
+  float minVerticalSpeed = ballSpeed * std::sin(MIN_ANGLE);
+  if (std::abs(newVelocityY) < minVerticalSpeed) {
+    newVelocityY = -minVerticalSpeed;
+    newVelocityX = (hitOffset >= 0 ? 1.f : -1.f) *
+                   std::sqrt(std::max(0.f, ballSpeed * ballSpeed -
+                                               newVelocityY * newVelocityY));
+  }
+
+  ballVelocity.x = newVelocityX;
+  ballVelocity.y = newVelocityY;
+}
+
+void Ball::resolveBlockCollision(Block &block,
+                                 const sf::FloatRect &currentBounds,
+                                 const sf::FloatRect &nextBounds) {
+  sf::FloatRect blockBounds = block.getBounds();
+  sf::Vector2f currentCenter = currentBounds.getCenter();
+  sf::Vector2f nextCenter = nextBounds.getCenter();
+
+  // Compute distances between centers
+  float dx = nextCenter.x - blockBounds.getCenter().x;
+  float dy = nextCenter.y - blockBounds.getCenter().y;
+
+  // Decide whether the collision is horizontal or vertical
+  if (std::abs(dx) * blockBounds.size.y > std::abs(dy) * blockBounds.size.x) {
+    // Horizontal collision: adjust X velocity
+    ballVelocity.x =
+        (dx > 0) ? std::abs(ballVelocity.x) : -std::abs(ballVelocity.x);
+
+    // Adjust position to prevent sticking
+    float newX = (dx > 0)
+                     ? blockBounds.getCenter().x + blockBounds.size.x / 2.f +
+                           currentBounds.size.x / 2.f + 1.f
+                     : blockBounds.getCenter().x - blockBounds.size.x / 2.f -
+                           currentBounds.size.x / 2.f - 1.f;
+    sprite_ptr->setPosition({newX, currentCenter.y});
+  } else {
+    // Vertical collision: adjust Y velocity
+    ballVelocity.y =
+        (dy > 0) ? std::abs(ballVelocity.y) : -std::abs(ballVelocity.y);
+
+    // Adjust position to prevent sticking
+    float newY = (dy > 0)
+                     ? blockBounds.getCenter().y + blockBounds.size.y / 2.f +
+                           currentBounds.size.y / 2.f + 1.f
+                     : blockBounds.getCenter().y - blockBounds.size.y / 2.f -
+                           currentBounds.size.y / 2.f - 1.f;
+    sprite_ptr->setPosition({currentCenter.x, newY});
+  }
+
+  // Normalize the velocity to maintain constant speed
+  float speed = std::sqrt(ballVelocity.x * ballVelocity.x +
+                          ballVelocity.y * ballVelocity.y);
+  if (speed != 0.f) {
+    ballVelocity = (ballVelocity / speed) * ballSpeed;
   }
 }
 
@@ -80,79 +225,37 @@ void Ball::onCollision(GameObject &other) {
   sf::FloatRect ballBounds = sprite_ptr->getGlobalBounds();
   sf::FloatRect blockBounds = block->getBounds();
 
-  // **Calculate overlap distances**
+  // Calculate overlap distances using centers
   float overlapX = blockBounds.getCenter().x - ballBounds.getCenter().x;
   float overlapY = blockBounds.getCenter().y - ballBounds.getCenter().y;
 
-  float absOverlapX = std::abs(overlapX);
-  float absOverlapY = std::abs(overlapY);
-
-  if (absOverlapX > absOverlapY) {
-    // **Horizontal collision → Flip X velocity**
+  if (std::abs(overlapX) > std::abs(overlapY)) {
+    // Horizontal collision: invert X velocity and push out
     ballVelocity.x *= -1;
-
-    // **Push ball out of block on X-axis**
-    if (overlapX > 0) {
+    if (overlapX > 0)
       sprite_ptr->setPosition({blockBounds.getCenter().x -
-                                   blockBounds.size.x / 2 -
-                                   ballBounds.size.x / 2,
+                                   blockBounds.size.x / 2.f -
+                                   ballBounds.size.x / 2.f,
                                sprite_ptr->getPosition().y});
-    } else {
+    else
       sprite_ptr->setPosition({blockBounds.getCenter().x +
-                                   blockBounds.size.x / 2 +
-                                   ballBounds.size.x / 2,
+                                   blockBounds.size.x / 2.f +
+                                   ballBounds.size.x / 2.f,
                                sprite_ptr->getPosition().y});
-    }
   } else {
-    // **Vertical collision → Flip Y velocity**
+    // Vertical collision: invert Y velocity and push out
     ballVelocity.y *= -1;
-
-    // **Push ball out of block on Y-axis**
-    if (overlapY > 0) {
+    if (overlapY > 0)
       sprite_ptr->setPosition(
           {sprite_ptr->getPosition().x, blockBounds.getCenter().y -
-                                            blockBounds.size.y / 2 -
-                                            ballBounds.size.y / 2});
-    } else {
+                                            blockBounds.size.y / 2.f -
+                                            ballBounds.size.y / 2.f});
+    else
       sprite_ptr->setPosition(
           {sprite_ptr->getPosition().x, blockBounds.getCenter().y +
-                                            blockBounds.size.y / 2 +
-                                            ballBounds.size.y / 2});
-    }
+                                            blockBounds.size.y / 2.f +
+                                            ballBounds.size.y / 2.f});
   }
-}
-
-void Ball::applyAngleDeflection(Paddle &paddle) {
-  float paddleCenterX = paddle.getBounds().getCenter().x;
-  float ballCenterX = sprite_ptr->getGlobalBounds().getCenter().x;
-  float hitOffset =
-      (ballCenterX - paddleCenterX) / (paddle.getBounds().size.x / 2.f);
-
-  // Apply slight horizontal deflection
-  float maxDeflection = 500.f;
-  ballVelocity.x += hitOffset * maxDeflection;
-
-  // Normalize to maintain speed
-  float length = std::sqrt(ballVelocity.x * ballVelocity.x +
-                           ballVelocity.y * ballVelocity.y);
-  if (length != 0) {
-    ballVelocity = (ballVelocity / length) * ballSpeed;
-  }
-}
-
-bool Ball::checkCollision(sf::FloatRect obj1, float deltaTime) {
-  sf::FloatRect nextPos = sprite_ptr->getGlobalBounds();
-
-  // Predict next position based on velocity
-  sf::Vector2f nextCenter = nextPos.getCenter() + (ballVelocity * deltaTime);
-
-  // Convert center-based position to rectangle position
-  sf::FloatRect predictedBounds({nextCenter.x - (nextPos.size.x / 2),
-                                 nextCenter.y - (nextPos.size.y / 2)},
-                                nextPos.size);
-
-  // Check for intersection
-  return obj1.findIntersection(predictedBounds) != std::nullopt;
 }
 
 void Ball::draw(sf::RenderWindow &window) { window.draw(*sprite_ptr); }
@@ -161,16 +264,15 @@ sf::FloatRect Ball::getBounds() const { return sprite_ptr->getGlobalBounds(); }
 
 void Ball::attachToPaddle(const sf::Vector2f &paddlePosition) {
   attachedToPaddle = true;
+  sf::FloatRect bounds = sprite_ptr->getGlobalBounds();
   sprite_ptr->setPosition(
-      {paddlePosition.x,
-       paddlePosition.y - sprite_ptr->getGlobalBounds().size.y / 2});
+      {paddlePosition.x, paddlePosition.y - bounds.size.y / 2.f});
 }
 
-void Ball::resetVelocity() { this->ballVelocity = startVelocity; }
+void Ball::resetVelocity() { ballVelocity = startVelocity; }
 
 bool Ball::isOutOfBounds(float height) {
   if (sprite_ptr->getPosition().y > height) {
-    // Reset ball position and velocity
     sprite_ptr->setPosition(startPos);
     resetVelocity();
     attachedToPaddle = true;
@@ -182,11 +284,11 @@ bool Ball::isOutOfBounds(float height) {
 void Ball::launch() {
   if (attachedToPaddle) {
     attachedToPaddle = false;
-    // Set initial velocity (adjust as needed)
-    ballVelocity = {0.5f, -1.f}; // Example direction
-    // Normalize velocity
+    // Set an initial upward direction with a slight horizontal offset
+    ballVelocity = {0.5f, -1.f};
     float length = std::sqrt(ballVelocity.x * ballVelocity.x +
                              ballVelocity.y * ballVelocity.y);
-    ballVelocity = (ballVelocity / length) * ballSpeed;
+    if (length != 0.f)
+      ballVelocity = (ballVelocity / length) * ballSpeed;
   }
 }

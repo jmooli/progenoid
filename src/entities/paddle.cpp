@@ -23,10 +23,15 @@ void Paddle::update(float deltaTime, Paddle &paddle,
                     std::vector<std::unique_ptr<GameObject>> &gameObjects) {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) ||
       sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) {
-    paddleSprite.move(sf::Vector2f(-speed * deltaTime, 0.f));
+    if (GetPosition().x > 0) {
+      paddleSprite.move(sf::Vector2f(-speed * deltaTime, 0.f));
+    }
   } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) ||
              sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) {
-    paddleSprite.move(sf::Vector2f(speed * deltaTime, 0.f));
+    if (GetPosition().x + GetSize().x < 1920.f) {
+
+      paddleSprite.move(sf::Vector2f(speed * deltaTime, 0.f));
+    }
   }
 }
 
